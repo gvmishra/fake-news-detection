@@ -1,0 +1,18 @@
+const assert=require('node:assert/strict');
+const E=require('../dist/engine.js');
+assert.deepEqual(E.parseCSV('text,label\r\n"a,b\nline ""quote""",fake'),[['text','label'],['a,b\nline "quote"','fake']]);
+assert.throws(()=>E.parseCSV('"broken'),/Unclosed/);
+assert.throws(()=>E.dataset('text,label\nshort,other'),/Every row/);
+const words=['alpha','bravo','charlie','delta','echo','foxtrot','golf','hotel','india','juliet','kilo','lima'];
+const csv='text,label\n'+words.flatMap(w=>[`"council report official audited publication ${w}",real`,`"miracle shocking secret share guaranteed ${w}",fake`]).join('\n');
+const rows=E.dataset(csv);assert.equal(rows.length,24);
+assert.equal(E.dataset(csv+'\n"council report official audited publication alpha",real').length,24);
+assert.throws(()=>E.dataset(csv+'\n"council report official audited publication alpha",fake'),/conflicting/);
+const trained=E.evaluate(rows);assert.equal(trained.stats.train,20);assert.equal(trained.stats.test,4);
+assert.equal(E.predict(trained.model,'miracle shocking secret guaranteed').label,'fake');
+assert.equal(E.predict(trained.model,'council report official publication').label,'real');
+assert.equal(E.predict(trained.model,'unseen vocabulary').label,'unknown');
+assert.ok(E.signals('SHOCKING!! Share this before they delete it').length>=2);
+assert.equal(E.signals('The council released a report on Tuesday.').length,0);
+assert.deepEqual(E.evaluate(rows).stats,trained.stats);
+console.log('12 core checks passed; synthetic fixtures test code, not model accuracy.');
